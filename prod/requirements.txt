@@ -1,8 +1,8 @@
+streamlit
+streamlit-webrtc
 torch
 torchvision
-streamlit
-facenet-pytorch
-Pillow
+opencv-python
 numpy
-scikit-learn
-matplotlib
+Pillow
+opencv-python-headless

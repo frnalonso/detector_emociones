@@ -1,61 +1,62 @@
 import cv2
 import torch
-from facenet_pytorch import MTCNN
-from torchvision import transforms
-from torchvision.models import resnet18
+import numpy as np
 from PIL import Image
-from prod.utils import emotion_labels
+from torchvision import transforms
+from facenet_pytorch import MTCNN
+from streamlit_webrtc import VideoProcessorBase
+from utils import detect_face, predict_emotion, EMOTION_LABELS
+from torchvision.models import resnet18
 
-
-
-
-# Dispositivo
+# Configuración del dispositivo
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-print("dispositivo utilizado: ",device)
 
-# Cargar modelo
-model = resnet18(num_classes=7)
-model.load_state_dict(torch.load("prod/modelo.pth", map_location=device))
-model.eval().to(device)
+# Modelo cargado una sola vez
+def load_model():
+    model = resnet18(num_classes=7)
+    model.load_state_dict(torch.load("prod/modelo.pth", map_location=device))
+    model.eval().to(device)
+    return model
 
-# Transformación
-transform = transforms.Compose([
-    transforms.Resize((128, 128)),
-    transforms.ToTensor()
-])
-
-# Detector de rostro
+# Detector de rostros global
 mtcnn = MTCNN(keep_all=False, device=device)
 
-# Captura de webcam
-cap = cv2.VideoCapture(0)
+# Transformación uniforme
+transform = transforms.Compose([
+    transforms.Resize((128, 128)),
+    transforms.ToTensor(),
+])
 
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        break
+# Procesador de video para streamlit-webrtc
+class EmotionDetector(VideoProcessorBase):
+    def __init__(self, model):
+        self.model = model
+        self.frame_count = 0
 
-    img = Image.fromarray(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
-    face = mtcnn(img)
+    def recv(self, frame):
+        
+        img = frame.to_ndarray(format="bgr24")
 
-    if face is not None:
-        face = transform(transforms.ToPILImage()(face)).unsqueeze(0).to(device)
-        with torch.no_grad():
-            output = model(face)
-            _, predicted = torch.max(output, 1)
-            emotion = emotion_labels[predicted.item()]
+        # Disminuimos resolución para mejorar performance
+        img_small = cv2.resize(img, (640, 480))
+        img_rgb = cv2.cvtColor(img_small, cv2.COLOR_BGR2RGB)
+        pil_img = Image.fromarray(img_rgb)
 
-        boxes, _ = mtcnn.detect(img)
-        if boxes is not None:
-            for box in boxes:
-                (x1, y1, x2, y2) = box.astype(int)
-                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
-                cv2.putText(frame, emotion.upper(), (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX,
-                            0.9, (0, 255, 0), 2)
+        # Procesar solo 1 de cada 5 frames
+        self.frame_count += 1
+        if self.frame_count % 5 != 0:
+            return img_small
 
-    cv2.imshow('Detector de emociones', frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
+        face_tensor = detect_face(pil_img)
+        if face_tensor is not None:
+            
+            emotion = predict_emotion(self.model, face_tensor)
+            boxes, _ = mtcnn.detect(pil_img)
+            if boxes is not None:
+                for box in boxes:
+                    x1, y1, x2, y2 = box.astype(int)
+                    cv2.rectangle(img_small, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                    cv2.putText(img_small, emotion.upper(), (x1, y1 - 10),
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 255, 0), 2)
 
-cap.release()
-cv2.destroyAllWindows()
+        return img_small

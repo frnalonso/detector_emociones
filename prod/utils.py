@@ -3,7 +3,7 @@ from torchvision import transforms
 from PIL import Image
 from facenet_pytorch import MTCNN
 
-emotion_labels = ['enojado', 'disgustado', 'temeroso', 'feliz', 'triste', 'sorprendido', 'neutral']
+EMOTION_LABELS = ['enojado', 'disgustado', 'temeroso', 'feliz', 'triste', 'sorprendido', 'neutral']
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 mtcnn = MTCNN(keep_all=False, device=device)
@@ -19,11 +19,11 @@ def detect_face(image):
     face = mtcnn(image)
     if face is None:
         return None
-    resize = transforms.Resize((128, 128))
+    resize = transforms.Resize((224, 224))
     return resize(face).unsqueeze(0).to(device)
 
 def predict_emotion(model, face_tensor):
     with torch.no_grad():
         output = model(face_tensor)
         _, predicted = torch.max(output, 1)
-    return emotion_labels[predicted.item()]
+    return EMOTION_LABELS[predicted.item()]
