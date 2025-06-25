@@ -25,7 +25,7 @@ emotion-detector/
 ### 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/tuusuario/emotion-detector.git
+git clone https://github.com/frnalonso7/emotion-detector.git
 cd emotion-detector
 ```
 
