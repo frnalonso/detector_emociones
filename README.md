@@ -1,4 +1,4 @@
-# 🧠 Detección de Emociones Faciales con Deep Learning
+# 🧠 Detección de Emociones Faciales
 
 Este proyecto utiliza modelos de deep learning preentrenados (ResNet18, ResNet50) para reconocer emociones humanas a partir de imágenes faciales. Se entrenó sobre la base de datos RAF-DB y permite detectar emociones en tiempo real a través de la cámara web utilizando Streamlit.
 
