@@ -7,3 +7,4 @@ numpy
 Pillow
 opencv-python-headless
 facenet_pytorch
+matplotlib
