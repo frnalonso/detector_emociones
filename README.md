@@ -25,8 +25,8 @@ emotion-detector/
 ### 1. Clonar el repositorio
 
 ```bash
-git clone https://github.com/frnalonso7/emotion-detector.git
-cd emotion-detector
+git clone https://github.com/frnalonso/detector_emociones.git
+cd detector_emociones
 ```
 
 ### 2. Instalar dependencias
